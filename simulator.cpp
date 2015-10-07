@@ -32,6 +32,22 @@ int get_int_from_string(string s){
 	return num;
 }
 
+int get_twos_complement(string s) {
+	int num = 0;
+	if s[0] == '0' {
+		return get_int_from_string(s);
+	}
+	else {
+		// if 2'complement of a negative no y is x then ~x + 1 = -y
+		for(int i = 0; i < s.size(); ++i) {
+			s[i] = 1 - s[i];
+		}
+		num = get_int_from_string(s);
+		num++;
+		return (-num);
+	}
+}
+
 class simulator{
 	long long int clk;
 	bool control_flag;
@@ -83,8 +99,23 @@ public:
 			register_file[i] = 0;
 		}
 
+		register_file[0] = 0
+
 
 	}
+
+	int fetch(int ins_index) {
+		pipeline_instr p;
+		if (control_flag) {
+			p.IR = "1110000000000000";
+		}
+		else {
+			p.IR = i_cache[pc];
+			pc += 2;
+		}
+		ins_pipeline[ins_index] = p;
+	}
+
 
 	int decode(int ins_index){
 
@@ -109,14 +140,23 @@ public:
 		else{ // add, sub, mul, ld,st
 			ins_pipeline[ins_index].op1 = get_int_from_string(IR.substr(4,4));
 			ins_pipeline[ins_index].op2 = get_int_from_string(IR.substr(8,4));
-			ins_pipeline[ins_index].op3 = get_int_from_string(IR.substr(12,4));
-			prev_ins_decoded_is_branch = true;
-			control_flag = true;
+			if (ins_pipeline[ins_index].immediate) {
+				ins_pipeline[ins_index].op3 = get_twos_complement(IR.substr(12,4));
+			}
+			else {
+				ins_pipeline[ins_index].op3 = get_int_from_string(IR.substr(12,4));
+			}
+			prev_ins_decoded_is_branch = false;
+			control_flag = false;
 
 		}
 
 		return 1;
 	}
+
+	int register_read(int ins_index) {
+		if (ins_pipeline[ins_index].opcode <= 2) {
+			A = register_file[ins_pipeline[ins_index].op2];
 
 
 
