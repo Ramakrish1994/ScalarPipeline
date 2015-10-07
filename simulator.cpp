@@ -78,16 +78,16 @@ public:
 
 	int simulate(){
 
-		// while(1){
-		// 	is_last_ins = fetch(ins_index[0]);
-		// 	decode(ins_index[1]);
-		// 	// rest of calls
+		while(1){
+			is_last_ins = fetch(ins_index[0]);
+			decode(ins_index[1]);
+			// rest of calls
 
-		// 	next_clock_cycle();//increments clk and the index
+			next_clock_cycle();//increments clk and the index
 
-		// 	//break based on is_last_ins
+			//break based on is_last_ins
 
-		// }
+		}
 
 	}
 
