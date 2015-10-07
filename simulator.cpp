@@ -1,6 +1,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <iostream>
 using namespace std;
 #define NUM_REGISTERS 16
 
@@ -14,6 +15,20 @@ struct pipeline_instr {
 	int alu_output;
 	int load_md;
 };
+
+
+int get_int_from_string(string s){
+	int num = 0;
+	int len = s.length();
+	int pow2 = 1;
+	for(int i = len-1; i >= 0; i--){
+		if(s[i] == '1')
+			num += pow2;
+		pow2 *= 2;
+
+	}
+	return num;
+}
 
 class simulator{
 	long long int clk;
@@ -57,7 +72,7 @@ public:
 
 		//decode stage
 		prev_ins_decoded_is_branch = false;
-
+		control_flag = false;
 		clk = 0;
 
 	}
@@ -69,7 +84,27 @@ public:
 				ins_pipeline[ins_index].opcode = 7;
 			}
 
-		// need to fill in
+		string IR = ins_pipeline[ins_index].IR;
+		ins_pipeline[ins_index].opcode = get_int_from_string(IR.substr(0,3));
+		ins_pipeline[ins_index].immediate = (get_int_from_string(IR.substr(3,1)) >= 1)?true:false;
+		
+		if (ins_pipeline[ins_index].opcode == 5 ){ // jump instruction
+			ins_pipeline[ins_index].op1 = get_int_from_string(IR.substr(4,8));
+		}
+		else if (ins_pipeline[ins_index].opcode == 6){ // BEQZ
+			ins_pipeline[ins_index].op1 = get_int_from_string(IR.substr(4,4));
+			ins_pipeline[ins_index].op2 = get_int_from_string(IR.substr(8,8));
+			prev_ins_decoded_is_branch = true;
+			control_flag = true;
+		}
+		else{ // add, sub, mul, ld,st
+			ins_pipeline[ins_index].op1 = get_int_from_string(IR.substr(4,4));
+			ins_pipeline[ins_index].op2 = get_int_from_string(IR.substr(8,4));
+			ins_pipeline[ins_index].op3 = get_int_from_string(IR.substr(12,4));
+			prev_ins_decoded_is_branch = true;
+			control_flag = true;
+
+		}
 
 		return 1;
 	}
@@ -79,13 +114,13 @@ public:
 	int simulate(){
 
 		while(1){
-			is_last_ins = fetch(ins_index[0]);
-			decode(ins_index[1]);
-			// rest of calls
+			// int is_last_ins = fetch(ins_index[0]);
+			// decode(ins_index[1]);
+			// // rest of calls
 
-			next_clock_cycle();//increments clk and the index
+			// next_clock_cycle();//increments clk and the index
 
-			//break based on is_last_ins
+			// //break based on is_last_ins
 
 		}
 
@@ -95,5 +130,7 @@ public:
 };
 
 int main(){
+
+	
 	return 1;
 }
