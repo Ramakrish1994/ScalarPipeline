@@ -4,6 +4,7 @@
 #include <iostream>
 using namespace std;
 #define NUM_REGISTERS 16
+#define DEPTH_PIPELINE 6
 
 
 struct pipeline_instr {
@@ -11,6 +12,7 @@ struct pipeline_instr {
 	int opcode;
 	bool immediate;
 	int op1, op2, op3;
+	int A, B, imm_field;
 	int jump_offset;
 	int alu_output;
 	int load_md;
@@ -37,18 +39,18 @@ class simulator{
 	map<long long int, int> d_cache;
 	map<long long int, string> i_cache;
 
-	vector<bool> register_status;
+	vector<bool> register_status(NUM_REGISTERS);
 
 	long long int pc;
 
 	long long int register_file[NUM_REGISTERS];
 
-	struct pipeline_instr ins_pipeline[6];
+	struct pipeline_instr ins_pipeline[DEPTH_PIPELINE];
 	
-	int ins_index[6];
+	int ins_index[DEPTH_PIPELINE];
 	
 	int next_clock_cycle(){
-		for(int i=0; i<6; i++)
+		for(int i=0; i<DEPTH_PIPELINE; i++)
 			ins_index[i] = (ins_index[i]+1)%7;
 		clk ++;
 	}
@@ -74,6 +76,13 @@ public:
 		prev_ins_decoded_is_branch = false;
 		control_flag = false;
 		clk = 0;
+
+		pc = 0;
+		for(int i = 0; i < NUM_REGISTERS; ++i) {
+			register_status[i] = false;
+			register_file[i] = 0;
+		}
+
 
 	}
 
