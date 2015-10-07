@@ -1,6 +1,7 @@
-#include<vector>
-#include<map>
-#include<string>
+#include <vector>
+#include <map>
+#include <string>
+using namespace std;
 #define NUM_REGISTERS 16
 
 
@@ -14,12 +15,12 @@ struct pipeline_instr {
 	int load_md;
 };
 
-class simalator{
+class simulator{
 	long long int clk;
 	bool control_flag;
 
-	unordered_map<long long int, int> d_cache;
-	unordered_map<long long int, string> i_cache;
+	map<long long int, int> d_cache;
+	map<long long int, string> i_cache;
 
 	vector<bool> register_status;
 
@@ -77,18 +78,22 @@ public:
 
 	int simulate(){
 
-		while(1){
-			is_last_ins = fetch(ins_index[0]);
-			decode(ins_index[1]);
-			// rest of calls
+		// while(1){
+		// 	is_last_ins = fetch(ins_index[0]);
+		// 	decode(ins_index[1]);
+		// 	// rest of calls
 
-			next_clock_cycle();//increments clk and the index
+		// 	next_clock_cycle();//increments clk and the index
 
-			//break based on is_last_ins
+		// 	//break based on is_last_ins
 
-		}
+		// }
 
 	}
 
 
+};
+
+int main(){
+	return 1;
 }
