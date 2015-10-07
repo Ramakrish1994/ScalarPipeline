@@ -13,7 +13,7 @@ struct pipeline_instr {
 	bool immediate;
 	int op1, op2, op3;
 	int A, B, imm_field;
-	int jump_offset;
+	int cond;
 	int alu_output;
 	int load_md;
 };
@@ -130,14 +130,14 @@ public:
 		ins_pipeline[ins_index].immediate = (get_int_from_string(IR.substr(3,1)) >= 1)?true:false;
 		
 		if (ins_pipeline[ins_index].opcode == 5 ){ // jump instruction
-			ins_pipeline[ins_index].op1 = get_int_from_string(IR.substr(4,8));
+			ins_pipeline[ins_index].op1 = get_twos_complement(IR.substr(4,8));
 			prev_ins_decoded_is_branch = true;
 			control_flag = true;
 
 		}
 		else if (ins_pipeline[ins_index].opcode == 6){ // BEQZ
 			ins_pipeline[ins_index].op1 = get_int_from_string(IR.substr(4,4));
-			ins_pipeline[ins_index].op2 = get_int_from_string(IR.substr(8,8));
+			ins_pipeline[ins_index].op2 = get_twos_complement(IR.substr(8,8));
 			prev_ins_decoded_is_branch = true;
 			control_flag = true;
 		}
@@ -164,7 +164,25 @@ public:
 			A = register_file[ins_pipeline[ins_index].op2];
 
 	int execute (int ins_index){
+		long long int A = ins_pipeline[ins_index].A;
+		long long int B = ins_pipeline[ins_index].B;
+		long long int imm_field = ins_pipeline[ins_index].imm_field;
 
+		switch(ins_pipeline[ins_index].opcode){
+
+			case 0: if (ins_pipeline[ins_index].immediate) ins_pipeline[ins_index].alu_output = A + imm_field;
+					else ins_pipeline[ins_index].alu_output = A + B; break;
+			case 1: if (ins_pipeline[ins_index].immediate) ins_pipeline[ins_index].alu_output = A - imm_field;
+					else ins_pipeline[ins_index].alu_output = A - B; break;
+			case 2: if (ins_pipeline[ins_index].immediate) ins_pipeline[ins_index].alu_output = A * imm_field;
+					else ins_pipeline[ins_index].alu_output = A * B; break;
+
+			case 3: ins_pipeline[ins_index].alu_output = 0 + A; break;
+			case 4: ins_pipeline[ins_index].alu_output = 0 + A; break;
+
+			case 5: ins_pipeline[ins_index].alu_output = pc + (imm_field<<1); ins_pipeline[ins_index].cond = 1; break;
+			case 6: ins_pipeline[ins_index].alu_output = pc + (imm_field<<1); ins_pipeline[ins_index].cond = (A == 0); break;
+		}
 	}
 
 
