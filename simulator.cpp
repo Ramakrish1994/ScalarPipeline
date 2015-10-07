@@ -34,7 +34,7 @@ int get_int_from_string(string s){
 
 int get_twos_complement(string s) {
 	int num = 0;
-	if s[0] == '0' {
+	if (s[0] == '0') {
 		return get_int_from_string(s);
 	}
 	else {
@@ -55,7 +55,7 @@ class simulator{
 	map<long long int, int> d_cache;
 	map<long long int, string> i_cache;
 
-	vector<bool> register_status(NUM_REGISTERS);
+	vector<bool> register_status;
 
 	long long int pc;
 
@@ -95,11 +95,11 @@ public:
 
 		pc = 0;
 		for(int i = 0; i < NUM_REGISTERS; ++i) {
-			register_status[i] = false;
+			register_status.push_back(false);
 			register_file[i] = 0;
 		}
 
-		register_file[0] = 0
+		register_file[0] = 0;
 
 
 	}
@@ -203,6 +203,7 @@ public:
 			case 5: ins_pipeline[ins_index].alu_output = pc + (imm_field<<1); ins_pipeline[ins_index].cond = 1; break;
 			case 6: ins_pipeline[ins_index].alu_output = pc + (imm_field<<1); ins_pipeline[ins_index].cond = (A == 0); break;
 		}
+		return 1;
 	}
 
 	int mem_branch_cycle (int ins_index) {
@@ -210,7 +211,7 @@ public:
 			ins_pipeline[ins_index].load_md = d_cache[ins_pipeline[ins_index].alu_output];
 		}
 		else if (ins_pipeline[ins_index].opcode == 4) {
-			d_cache[ins_pipeline[index].alu_output] = ins_pipeline[ins_index].B;
+			d_cache[ins_pipeline[ins_index].alu_output] = ins_pipeline[ins_index].B;
 		}
 		else if (ins_pipeline[ins_index].opcode == 5) {
 			pc = ins_pipeline[ins_index].alu_output;
@@ -222,6 +223,13 @@ public:
 				control_flag = false;
 			}
 		}
+	}
+
+	int write_back(int ins_index){
+		if (ins_pipeline[ins_index].opcode <=2)
+			register_file[ins_pipeline[ins_index].op1] = ins_pipeline[ins_index].alu_output;
+		if (ins_pipeline[ins_index].opcode == 3)
+			register_file[ins_pipeline[ins_index].op1] = ins_pipeline[ins_index].load_md;
 	}
 
 
