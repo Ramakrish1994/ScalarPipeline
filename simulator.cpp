@@ -150,8 +150,6 @@ public:
 			else {
 				ins_pipeline[ins_index].op3 = get_int_from_string(IR.substr(12,4));
 			}
-			prev_ins_decoded_is_branch = false;
-			control_flag = false;
 
 		}
 
@@ -161,7 +159,29 @@ public:
 
 	int register_read(int ins_index) {
 		if (ins_pipeline[ins_index].opcode <= 2) {
-			A = register_file[ins_pipeline[ins_index].op2];
+			ins_pipeline[ins_index].A = register_file[ins_pipeline[ins_index].op2];
+			if(ins_pipeline[ins_index].immediate) {
+				ins_pipeline[ins_index].imm_field = ins_pipeline[ins_index].op3;
+			}
+			else {
+				ins_pipeline[ins_index].B = register_file[ins_pipeline[ins_index].op3];
+			}
+		}
+		else if (ins_pipeline[ins_index].opcode == 3) {
+			ins_pipeline[ins_index].A = register_file[ins_pipeline[ins_index].op2];
+		}
+		else if (ins_pipeline[ins_index].opcode == 4) {
+			ins_pipeline[ins_index].A = register_file[ins_pipeline[ins_index].op1];
+			ins_pipeline[ins_index].B = register_file[ins_pipeline[ins_index].op2];
+		}
+		else if(ins_pipeline[ins_index].opcode == 5) {
+			ins_pipeline[ins_index].imm_field = ins_pipeline[ins_index].op1;
+		}
+		else if(ins_pipeline[ins_index].opcode == 6) {
+			ins_pipeline[ins_index].A = register_file[ins_pipeline[ins_index].op1];
+			ins_pipeline[ins_index].imm_field = ins_pipeline[ins_index].op2;
+		}
+	}	
 
 	int execute (int ins_index){
 		long long int A = ins_pipeline[ins_index].A;
@@ -185,6 +205,24 @@ public:
 		}
 	}
 
+	int mem_branch_cycle (int ins_index) {
+		if (ins_pipeline[ins_index].opcode == 3) {
+			ins_pipeline[ins_index].load_md = d_cache[ins_pipeline[ins_index].alu_output];
+		}
+		else if (ins_pipeline[ins_index].opcode == 4) {
+			d_cache[ins_pipeline[index].alu_output] = ins_pipeline[ins_index].B;
+		}
+		else if (ins_pipeline[ins_index].opcode == 5) {
+			pc = ins_pipeline[ins_index].alu_output;
+			control_flag = false;
+		}
+		else if (ins_pipeline[ins_index].opcode == 6) {
+			if (ins_pipeline[ins_index].cond) {
+				pc = ins_pipeline[ins_index].alu_output;
+				control_flag = false;
+			}
+		}
+	}
 
 
 
