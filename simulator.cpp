@@ -91,6 +91,7 @@ public:
 		if(prev_ins_decoded_is_branch){
 				prev_ins_decoded_is_branch = false;
 				ins_pipeline[ins_index].opcode = 7;
+				pc -= 2;
 			}
 
 		string IR = ins_pipeline[ins_index].IR;
@@ -99,6 +100,9 @@ public:
 		
 		if (ins_pipeline[ins_index].opcode == 5 ){ // jump instruction
 			ins_pipeline[ins_index].op1 = get_int_from_string(IR.substr(4,8));
+			prev_ins_decoded_is_branch = true;
+			control_flag = true;
+
 		}
 		else if (ins_pipeline[ins_index].opcode == 6){ // BEQZ
 			ins_pipeline[ins_index].op1 = get_int_from_string(IR.substr(4,4));
@@ -110,12 +114,14 @@ public:
 			ins_pipeline[ins_index].op1 = get_int_from_string(IR.substr(4,4));
 			ins_pipeline[ins_index].op2 = get_int_from_string(IR.substr(8,4));
 			ins_pipeline[ins_index].op3 = get_int_from_string(IR.substr(12,4));
-			prev_ins_decoded_is_branch = true;
-			control_flag = true;
-
+			
 		}
 
 		return 1;
+	}
+
+	int execute (int ins_index){
+
 	}
 
 
