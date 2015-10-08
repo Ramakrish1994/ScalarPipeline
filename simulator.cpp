@@ -8,6 +8,7 @@ using namespace std;
 
 
 struct pipeline_instr {
+	long long int pc;
 	string IR;
 	int opcode;
 	bool immediate;
@@ -16,6 +17,7 @@ struct pipeline_instr {
 	int cond;
 	int alu_output;
 	int load_md;
+	//copy constructor
 };
 
 
@@ -55,7 +57,7 @@ class simulator{
 	map<long long int, int> d_cache;
 	map<long long int, string> i_cache;
 
-	vector<bool> register_status;
+	vector<long long int> register_status;
 
 	long long int pc;
 
@@ -73,6 +75,10 @@ class simulator{
 
 	bool prev_ins_decoded_is_branch;
 
+	pipeline_instr temp_fetch, temp_decode;
+	bool raw_flag;
+	bool prev_raw_flag;
+	bool wait_on_reg[NUM_REGISTERS];
 	
 public:
 	simulator(){
@@ -88,6 +94,11 @@ public:
 			ins_pipeline[i].IR = "1110000000000000"; //assuming 16 bit instructions
 		}
 
+		temp_decode.opcode = 7;
+		temp_decode.IR = "1110000000000000";
+
+		temp_fetch.opcode = 7;
+		temp_fetch.IR = "1110000000000000";
 		//decode stage
 		prev_ins_decoded_is_branch = false;
 		control_flag = false;
@@ -95,22 +106,28 @@ public:
 
 		pc = 0;
 		for(int i = 0; i < NUM_REGISTERS; ++i) {
-			register_status.push_back(false);
+			register_status.push_back(-1);
 			register_file[i] = 0;
+			wait_on_reg[i] = false;
 		}
 
 		register_file[0] = 0;
+
+		raw_flag = false;
+
+		prev_raw_flag = false;
 
 
 	}
 
 	int fetch(int ins_index) {
 		pipeline_instr p;
-		if (control_flag) {
+		if (control_flag || raw_flag) {
 			p.IR = "1110000000000000";
 		}
 		else {
 			p.IR = i_cache[pc];
+			p.pc = pc;
 			pc += 2;
 		}
 		ins_pipeline[ins_index] = p;
@@ -118,6 +135,17 @@ public:
 
 
 	int decode(int ins_index){
+
+		bool is_raw = false;
+
+		if (prev_raw_flag){
+			prev_raw_flag = false;
+			temp_fetch = ins_pipeline[ins_index];
+			ins_pipeline[ins_index].opcode = 7;
+		}
+
+		if(raw_flag)
+			ins_pipeline[ins_index].opcode = 7;
 
 		if(prev_ins_decoded_is_branch){
 				prev_ins_decoded_is_branch = false;
@@ -140,6 +168,12 @@ public:
 			ins_pipeline[ins_index].op2 = get_twos_complement(IR.substr(8,8));
 			prev_ins_decoded_is_branch = true;
 			control_flag = true;
+
+			if (register_status[ins_pipeline[ins_index].op1] != -1){
+				is_raw = true;
+				wait_on_reg[ins_pipeline[ins_index].op1] = true;
+			}
+
 		}
 		else{ // add, sub, mul, ld,st
 			ins_pipeline[ins_index].op1 = get_int_from_string(IR.substr(4,4));
@@ -151,7 +185,50 @@ public:
 				ins_pipeline[ins_index].op3 = get_int_from_string(IR.substr(12,4));
 			}
 
+			 
+			if( (ins_pipeline[ins_index].opcode <= 2 && ins_pipeline[ins_index].immediate) || ins_pipeline[ins_index].opcode == 3 )
+				if (register_status[ins_pipeline[ins_index].op2] != -1){
+					is_raw = true;
+					wait_on_reg[ins_pipeline[ins_index].op2] = true;
+				}
+
+			if( (ins_pipeline[ins_index].opcode <=2 && !ins_pipeline[ins_index].immediate) )
+				if (register_status[ins_pipeline[ins_index].op2] != -1){
+					wait_on_reg[ins_pipeline[ins_index].op2] = true;
+					is_raw = true;
+				} 
+				if (register_status[ins_pipeline[ins_index].op3] != -1){
+					wait_on_reg[ins_pipeline[ins_index].op3] = true;
+					is_raw = true;
+				}
+					
+
+			if( (ins_pipeline[ins_index].opcode == 4 ) )
+				if (register_status[ins_pipeline[ins_index].op1] != -1){
+					wait_on_reg[ins_pipeline[ins_index].op1] = true;
+					is_raw = true;
+				}
+				if (register_status[ins_pipeline[ins_index].op2] != -1){
+					wait_on_reg[ins_pipeline[ins_index].op2] = true;
+					is_raw = true;
+				}
+					
+
 		}
+
+		if (is_raw){
+			raw_flag = true;
+			prev_raw_flag = true;
+			temp_decode = ins_pipeline[ins_index];
+		}
+
+		else{
+
+			if(ins_pipeline[ins_index].opcode <= 3)
+				register_status[ins_pipeline[ins_index].op1] = pc;
+		}
+
+		
 
 		return 1;
 	}
@@ -230,6 +307,30 @@ public:
 			register_file[ins_pipeline[ins_index].op1] = ins_pipeline[ins_index].alu_output;
 		if (ins_pipeline[ins_index].opcode == 3)
 			register_file[ins_pipeline[ins_index].op1] = ins_pipeline[ins_index].load_md;
+
+
+		if (ins_pipeline[ins_index].opcode <= 3){
+			if(register_status[ins_pipeline[ins_index].op1] == ins_pipeline[ins_index].pc)
+				register_status[ins_pipeline[ins_index].op1] = -1;
+		}
+
+		if (raw_flag){
+			bool raw_not_over = false;
+			for(int i =0; i <NUM_REGISTERS; i++){
+				if(wait_on_reg[i] == true && register_status[i] == -1)
+					wait_on_reg[i] = false;
+				else if (wait_on_reg[i] == true && register_status[i] != -1)
+					raw_not_over = true;
+				
+			}
+
+			if(!raw_not_over){
+				raw_flag = false;
+				if(temp_decode.opcode <=3)
+					register_status[temp_decode.op1] = temp_decode.pc;
+				
+			}
+		}
 	}
 
 
