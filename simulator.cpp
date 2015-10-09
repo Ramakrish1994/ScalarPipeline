@@ -100,10 +100,6 @@ int Simulator::decode(int ins_index){
 		ins_pipeline[ins_index].IR = "1111000000000000";
 	}
 
-	if(raw_flag) {
-		ins_pipeline[ins_index].opcode = 7;
-		ins_pipeline[ins_index].IR = "1111000000000000";
-	}
 
 	if(prev_ins_decoded_is_branch){
 		prev_ins_decoded_is_branch = false;
@@ -178,20 +174,22 @@ int Simulator::decode(int ins_index){
 
 	}
 
+	out << ins_pipeline[ins_index].IR << endl;
 	if (is_raw){
 		raw_flag = true;
 		prev_raw_flag = true;
 		temp_decode = ins_pipeline[ins_index];
+		ins_pipeline[ins_index].opcode = 7;
+		ins_pipeline[ins_index].IR = "1111000000000000";
 	}
 
 	else{
 
 		if(ins_pipeline[ins_index].opcode <= 3)
-			register_status[ins_pipeline[ins_index].op1] = pc;
+			register_status[ins_pipeline[ins_index].op1] = ins_pipeline[ins_index].pc;
 	}
 
 
-	out << ins_pipeline[ins_index].IR << endl;
 
 	return 1;
 }
@@ -242,8 +240,8 @@ int Simulator::execute (int ins_index){
 		case 3: ins_pipeline[ins_index].alu_output = 0 + A; break;
 		case 4: ins_pipeline[ins_index].alu_output = 0 + A; break;
 
-		case 5: ins_pipeline[ins_index].alu_output = pc + (imm_field<<1); ins_pipeline[ins_index].cond = 1; break;
-		case 6: ins_pipeline[ins_index].alu_output = pc + (imm_field<<1); ins_pipeline[ins_index].cond = (A == 0); break;
+		case 5: ins_pipeline[ins_index].alu_output = ins_pipeline[ins_index].pc + (imm_field<<1); ins_pipeline[ins_index].cond = 1; break;
+		case 6: ins_pipeline[ins_index].alu_output = ins_pipeline[ins_index].pc + (imm_field<<1); ins_pipeline[ins_index].cond = (A == 0); break;
 	}
 	out << ins_pipeline[ins_index].IR << endl;
 	return 1;
@@ -258,6 +256,7 @@ int Simulator::mem_branch_cycle (int ins_index) {
 	}
 	else if (ins_pipeline[ins_index].opcode == 5) {
 		pc = ins_pipeline[ins_index].alu_output;
+		cerr << "JMP " << pc << endl;
 		control_flag = false;
 	}
 	else if (ins_pipeline[ins_index].opcode == 6) {
@@ -278,8 +277,9 @@ int Simulator::write_back(int ins_index){
 
 
 	if (ins_pipeline[ins_index].opcode <= 3){
-		if(register_status[ins_pipeline[ins_index].op1] == ins_pipeline[ins_index].pc)
+		if(register_status[ins_pipeline[ins_index].op1] == ins_pipeline[ins_index].pc) {
 			register_status[ins_pipeline[ins_index].op1] = -1;
+		}
 	}
 
 	if (raw_flag){
@@ -379,5 +379,14 @@ void Simulator::print_reg_file() {
 	cout << "Reg File\n";
 	for (int i = 0; i < NUM_REGISTERS; ++i) {
 		cout << i << ": " << register_file[i] << endl;
+	}
+	cout << "Wait on Reg\n";
+	for (int i = 0; i < NUM_REGISTERS; ++i) {
+		cout << i << ": " << wait_on_reg[i] << endl;
+	}
+
+	cout << "Reg Status\n";
+	for (int i = 0; i < NUM_REGISTERS; ++i) {
+		cout << i << ": " << register_status[i] << endl;
 	}
 }
