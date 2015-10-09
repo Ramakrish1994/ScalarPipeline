@@ -53,8 +53,10 @@ class Simulator{
 	pipeline_instr temp_fetch, temp_decode;
 	bool raw_flag;
 	bool prev_raw_flag;
+	bool unset_raw_flag_cycle;
 	bool wait_on_reg[NUM_REGISTERS];
 	string input_code;
+	ofstream out;
 
 	void load_i_cache();
 	
@@ -62,7 +64,7 @@ public:
 	Simulator(string input_file);
 	int fetch(int ins_index);
 	int decode(int ins_index);
-	int register_file(int ins_index);
+	int register_read(int ins_index);
 	int execute(int ins_index);
 	int mem_branch_cycle(int ins_index);
 	int write_back(int ins_index);

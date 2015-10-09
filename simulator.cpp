@@ -1,5 +1,7 @@
 #include "simulator.h"
 
+#include<stdlib.h>
+
 int get_int_from_string(string s){
 	int num = 0;
 	int len = s.length();
@@ -81,7 +83,9 @@ int Simulator::fetch(int ins_index) {
 		pc += 2;
 	}
 	ins_pipeline[ins_index] = p;
+	out << ins_pipeline[ins_index].IR << endl;
 	return 1;
+	
 }
 
 
@@ -93,14 +97,18 @@ int Simulator::decode(int ins_index){
 		prev_raw_flag = false;
 		temp_fetch = ins_pipeline[ins_index];
 		ins_pipeline[ins_index].opcode = 7;
+		ins_pipeline[ins_index].IR = "1111000000000000";
 	}
 
-	if(raw_flag)
+	if(raw_flag) {
 		ins_pipeline[ins_index].opcode = 7;
+		ins_pipeline[ins_index].IR = "1111000000000000";
+	}
 
 	if(prev_ins_decoded_is_branch){
 		prev_ins_decoded_is_branch = false;
 		ins_pipeline[ins_index].opcode = 7;
+		ins_pipeline[ins_index].IR = "1111000000000000";
 		pc -= 2;
 	}
 
@@ -183,6 +191,7 @@ int Simulator::decode(int ins_index){
 	}
 
 
+	out << ins_pipeline[ins_index].IR << endl;
 
 	return 1;
 }
@@ -212,6 +221,7 @@ int Simulator::register_read(int ins_index) {
 		ins_pipeline[ins_index].A = register_file[ins_pipeline[ins_index].op1];
 		ins_pipeline[ins_index].imm_field = ins_pipeline[ins_index].op2;
 	}
+	out << ins_pipeline[ins_index].IR << endl;
 	return 1;
 }	
 
@@ -235,10 +245,11 @@ int Simulator::execute (int ins_index){
 		case 5: ins_pipeline[ins_index].alu_output = pc + (imm_field<<1); ins_pipeline[ins_index].cond = 1; break;
 		case 6: ins_pipeline[ins_index].alu_output = pc + (imm_field<<1); ins_pipeline[ins_index].cond = (A == 0); break;
 	}
+	out << ins_pipeline[ins_index].IR << endl;
 	return 1;
 }
 
-int mem_branch_cycle (int ins_index) {
+int Simulator::mem_branch_cycle (int ins_index) {
 	if (ins_pipeline[ins_index].opcode == 3) {
 		ins_pipeline[ins_index].load_md = d_cache[ins_pipeline[ins_index].alu_output];
 	}
@@ -255,6 +266,7 @@ int mem_branch_cycle (int ins_index) {
 			control_flag = false;
 		}
 	}
+	out << ins_pipeline[ins_index].IR << endl;
 	return 1;
 }
 
@@ -288,6 +300,7 @@ int Simulator::write_back(int ins_index){
 
 		}
 	}
+	out << ins_pipeline[ins_index].IR << endl;
 	if (ins_pipeline[ins_index].opcode == 8)
 		return 0;
 	return 1;
@@ -298,6 +311,7 @@ int Simulator::write_back(int ins_index){
 int Simulator::simulate(){
 	load_i_cache();
 	while(1){
+		out.open("ins_pipeline.txt",ios::out);
 		fetch(ins_index[0]);
 		decode(ins_index[1]);
 		register_read(ins_index[2]);
@@ -312,8 +326,10 @@ int Simulator::simulate(){
 			ins_pipeline[ins_index[0]] = temp_fetch;
 			ins_pipeline[ins_index[1]] = temp_decode;
 		}
+		out.close();
+		system ("gui.py");
 		next_clock_cycle();
-
+		
 	}
 
 }
