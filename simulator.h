@@ -29,14 +29,14 @@ class Simulator{
 	long long int m_clk;
 	bool control_flag;
 
-	map<long long int, int> d_cache;
+	map<int, int> d_cache;
 	map<long long int, string> i_cache;
 
 	vector<long long int> register_status;
 
 	long long int pc;
 
-	long long int register_file[NUM_REGISTERS];
+	int register_file[NUM_REGISTERS];
 
 	struct pipeline_instr ins_pipeline[DEPTH_PIPELINE];
 	
@@ -59,6 +59,9 @@ class Simulator{
 	ofstream out;
 
 	void load_i_cache();
+	void print_i_cache();
+	void print_d_cache();
+	void print_reg_file();
 	
 public:
 	Simulator(string input_file);

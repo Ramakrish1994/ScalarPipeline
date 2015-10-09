@@ -165,7 +165,7 @@ int Simulator::decode(int ins_index){
 		}
 
 
-		if( (ins_pipeline[ins_index].opcode == 4 ) )
+		if(ins_pipeline[ins_index].opcode == 4)
 			if (register_status[ins_pipeline[ins_index].op1] != -1){
 				wait_on_reg[ins_pipeline[ins_index].op1] = true;
 				is_raw = true;
@@ -310,6 +310,7 @@ int Simulator::write_back(int ins_index){
 
 int Simulator::simulate(){
 	load_i_cache();
+	print_i_cache();
 	while(1){
 		out.open("ins_pipeline.txt",ios::out);
 		fetch(ins_index[0]);
@@ -326,25 +327,30 @@ int Simulator::simulate(){
 			ins_pipeline[ins_index[0]] = temp_fetch;
 			ins_pipeline[ins_index[1]] = temp_decode;
 		}
+		out << m_clk << endl;
 		out.close();
-		system ("gui.py");
+		system ("python gui.py");
 		next_clock_cycle();
+		print_reg_file();
 		
 	}
-
+	print_d_cache();
+	return 1;
 }
 
 void Simulator::load_i_cache() {
 	ifstream in;
 	in.open(input_code,ios::in);
-	int pc_value = 0;
+	long long int pc_value = 0;
 	string instr;
 	while (getline(in, instr)) {
+		cout<<instr<<endl;
 		if (instr == "1110000000000000") {
 			i_cache[pc_value] = instr;
 			pc_value += 2;
 			for (int i = 0; i < 5; ++i) {
 				i_cache[pc_value] = "1111000000000000";
+				pc_value += 2;
 			}
 		}
 		else {
@@ -355,3 +361,23 @@ void Simulator::load_i_cache() {
 	in.close();
 }
 
+void Simulator::print_i_cache() {
+	cout << i_cache.size() << endl;
+	for(map<long long int, string>::iterator it = i_cache.begin(); it != i_cache.end(); ++it) {
+		cout << it->first << ": " << it->second <<endl;
+	}
+}
+
+void Simulator::print_d_cache() {
+	cout << d_cache.size() << endl;
+	for(map<int, int>::iterator it = d_cache.begin(); it != d_cache.end(); ++it) {
+		cout << it->first << ": " << it->second <<endl;
+	}
+}
+
+void Simulator::print_reg_file() {
+	cout << "Reg File\n";
+	for (int i = 0; i < NUM_REGISTERS; ++i) {
+		cout << i << ": " << register_file[i] << endl;
+	}
+}
