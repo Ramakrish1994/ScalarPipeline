@@ -91,14 +91,14 @@ public:
 
 		for(int i=0;i<6;i++){
 			ins_pipeline[i].opcode = 7;
-			ins_pipeline[i].IR = "1110000000000000"; //assuming 16 bit instructions
+			ins_pipeline[i].IR = "1111000000000000"; //assuming 16 bit instructions
 		}
 
 		temp_decode.opcode = 7;
-		temp_decode.IR = "1110000000000000";
+		temp_decode.IR = "1111000000000000";
 
 		temp_fetch.opcode = 7;
-		temp_fetch.IR = "1110000000000000";
+		temp_fetch.IR = "1111000000000000";
 		//decode stage
 		prev_ins_decoded_is_branch = false;
 		control_flag = false;
@@ -123,7 +123,7 @@ public:
 	int fetch(int ins_index) {
 		pipeline_instr p;
 		if (control_flag || raw_flag) {
-			p.IR = "1110000000000000";
+			p.IR = "1111000000000000";
 		}
 		else {
 			p.IR = i_cache[pc];
@@ -156,6 +156,9 @@ public:
 		string IR = ins_pipeline[ins_index].IR;
 		ins_pipeline[ins_index].opcode = get_int_from_string(IR.substr(0,3));
 		ins_pipeline[ins_index].immediate = (get_int_from_string(IR.substr(3,1)) >= 1)?true:false;
+
+		if(ins_pipeline[ins_index].opcode == 7 && ins_pipeline[ins_index].immediate == 0)
+			ins_pipeline[ins_index].opcode = 8;
 		
 		if (ins_pipeline[ins_index].opcode == 5 ){ // jump instruction
 			ins_pipeline[ins_index].op1 = get_twos_complement(IR.substr(4,8));
@@ -331,6 +334,9 @@ public:
 				
 			}
 		}
+		if (ins_pipeline[ins_index].opcode == 8)
+			return 0;
+		return 1;
 	}
 
 
