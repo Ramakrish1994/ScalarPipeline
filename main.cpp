@@ -2,7 +2,7 @@
 
 int main(){
 
-    Simulator* simulator = new Simulator("input.txt");
+    Simulator* simulator = new Simulator("input.txt", true);
 	simulator->simulate();
 	delete simulator;
 	return 1;

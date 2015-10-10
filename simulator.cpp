@@ -23,7 +23,7 @@ int get_twos_complement(string s) {
 	else {
 		// if 2'complement of a negative no y is x then ~x + 1 = -y
 		for(int i = 0; i < s.size(); ++i) {
-			s[i] = 1 - s[i];
+			s[i] = '0' + (1 - (s[i] - '0'));
 		}
 		num = get_int_from_string(s);
 		num++;
@@ -31,7 +31,7 @@ int get_twos_complement(string s) {
 	}
 }
 
-Simulator::Simulator(string input_file){
+Simulator::Simulator(string input_file, bool b_enable){
 	ins_index[0] = 5;//for fetch
 	ins_index[1] = 4;
 	ins_index[2] = 3;
@@ -42,6 +42,7 @@ Simulator::Simulator(string input_file){
 	for(int i=0;i<6;i++){
 		ins_pipeline[i].opcode = 7;
 		ins_pipeline[i].IR = "1111000000000000"; //assuming 16 bit instructions
+		ins_pipeline[i].display_IR = "NOOP";
 	}
 
 	temp_decode.opcode = 7;
@@ -68,6 +69,8 @@ Simulator::Simulator(string input_file){
 
 	prev_raw_flag = false;
 	input_code = input_file;
+	branch_pred_enabled = b_enable;
+	flush_pipeline = false;
 
 
 }
@@ -78,7 +81,12 @@ int Simulator::fetch(int ins_index) {
 		p.IR = "1111000000000000";
 	}
 	else {
-		p.IR = i_cache[pc];
+		if (i_cache.count(pc) == 0) {
+			p.IR = "1110000000000000";
+		}
+		else {
+			p.IR = i_cache[pc];
+		}
 		p.pc = pc;
 		pc += 2;
 	}
@@ -105,7 +113,9 @@ int Simulator::decode(int ins_index){
 		prev_ins_decoded_is_branch = false;
 		ins_pipeline[ins_index].opcode = 7;
 		ins_pipeline[ins_index].IR = "1111000000000000";
-		pc -= 2;
+		if (!branch_pred_enabled) {
+			pc -= 2;
+		}
 	}
 
 	string IR = ins_pipeline[ins_index].IR;
@@ -115,25 +125,50 @@ int Simulator::decode(int ins_index){
 	if(ins_pipeline[ins_index].opcode == 7 && ins_pipeline[ins_index].immediate == 0)
 		ins_pipeline[ins_index].opcode = 8;
 
-	if (ins_pipeline[ins_index].opcode == 5 ){ // jump instruction
+	if (ins_pipeline[ins_index].opcode == 5){ // jump instruction
 		ins_pipeline[ins_index].op1 = get_twos_complement(IR.substr(4,8));
 		prev_ins_decoded_is_branch = true;
 		control_flag = true;
-
+		if (branch_pred_enabled) {
+			control_flag = false;
+			if (bp.count(ins_pipeline[ins_index].pc) == 0) {
+				bp[ins_pipeline[ins_index].pc] = BranchPredictor();
+				btb[ins_pipeline[ins_index].pc] = ins_pipeline[ins_index].pc + 2;
+			}
+			if (bp[ins_pipeline[ins_index].pc].predict()) {
+			   pc = btb[ins_pipeline[ins_index].pc];
+			}
+			else {
+			   prev_ins_decoded_is_branch = false;
+			}
+		}			
 	}
 	else if (ins_pipeline[ins_index].opcode == 6){ // BEQZ
 		ins_pipeline[ins_index].op1 = get_int_from_string(IR.substr(4,4));
 		ins_pipeline[ins_index].op2 = get_twos_complement(IR.substr(8,8));
 		prev_ins_decoded_is_branch = true;
 		control_flag = true;
-
+		
+		if (branch_pred_enabled) {
+			control_flag = false;
+			if (bp.count(ins_pipeline[ins_index].pc) == 0) {
+				bp[ins_pipeline[ins_index].pc] = BranchPredictor();
+				btb[ins_pipeline[ins_index].pc] = ins_pipeline[ins_index].pc + 2;
+			}
+			if (bp[ins_pipeline[ins_index].pc].predict()) {
+			   pc = btb[ins_pipeline[ins_index].pc];
+			}
+			else {
+			   prev_ins_decoded_is_branch = false;
+			}
+		}			
 		if (register_status[ins_pipeline[ins_index].op1] != -1){
 			is_raw = true;
 			wait_on_reg[ins_pipeline[ins_index].op1] = true;
 		}
 
 	}
-	else{ // add, sub, mul, ld,st
+	else if (ins_pipeline[ins_index].opcode <= 4) { // add, sub, mul, ld,st
 		ins_pipeline[ins_index].op1 = get_int_from_string(IR.substr(4,4));
 		ins_pipeline[ins_index].op2 = get_int_from_string(IR.substr(8,4));
 		if (ins_pipeline[ins_index].immediate) {
@@ -161,16 +196,16 @@ int Simulator::decode(int ins_index){
 		}
 
 
-		if(ins_pipeline[ins_index].opcode == 4)
+		if(ins_pipeline[ins_index].opcode == 4) {
 			if (register_status[ins_pipeline[ins_index].op1] != -1){
 				wait_on_reg[ins_pipeline[ins_index].op1] = true;
 				is_raw = true;
 			}
-		if (register_status[ins_pipeline[ins_index].op2] != -1){
-			wait_on_reg[ins_pipeline[ins_index].op2] = true;
-			is_raw = true;
+			if (register_status[ins_pipeline[ins_index].op2] != -1){
+				wait_on_reg[ins_pipeline[ins_index].op2] = true;
+				is_raw = true;
+			}
 		}
-
 
 	}
 
@@ -240,8 +275,8 @@ int Simulator::execute (int ins_index){
 		case 3: ins_pipeline[ins_index].alu_output = 0 + A; break;
 		case 4: ins_pipeline[ins_index].alu_output = 0 + A; break;
 
-		case 5: ins_pipeline[ins_index].alu_output = ins_pipeline[ins_index].pc + (imm_field<<1); ins_pipeline[ins_index].cond = 1; break;
-		case 6: ins_pipeline[ins_index].alu_output = ins_pipeline[ins_index].pc + (imm_field<<1); ins_pipeline[ins_index].cond = (A == 0); break;
+		case 5: ins_pipeline[ins_index].alu_output = ins_pipeline[ins_index].pc + (imm_field*2); ins_pipeline[ins_index].cond = 1; break;
+		case 6: ins_pipeline[ins_index].alu_output = ins_pipeline[ins_index].pc + (imm_field*2); ins_pipeline[ins_index].cond = (A == 0); break;
 	}
 	out << ins_pipeline[ins_index].IR << endl;
 	return 1;
@@ -249,20 +284,61 @@ int Simulator::execute (int ins_index){
 
 int Simulator::mem_branch_cycle (int ins_index) {
 	if (ins_pipeline[ins_index].opcode == 3) {
-		ins_pipeline[ins_index].load_md = d_cache[ins_pipeline[ins_index].alu_output];
+		if (d_cache.count (ins_pipeline[ins_index].alu_output) > 0) {
+			ins_pipeline[ins_index].load_md = d_cache[ins_pipeline[ins_index].alu_output];
+		}
+		else {
+			ins_pipeline[ins_index].load_md = 0;
+		}
 	}
 	else if (ins_pipeline[ins_index].opcode == 4) {
 		d_cache[ins_pipeline[ins_index].alu_output] = ins_pipeline[ins_index].B;
 	}
 	else if (ins_pipeline[ins_index].opcode == 5) {
+		long long int temp_pc;
+		if (branch_pred_enabled) {
+			temp_pc = pc;
+		}
 		pc = ins_pipeline[ins_index].alu_output;
-		cerr << "JMP " << pc << endl;
 		control_flag = false;
+		if(branch_pred_enabled) {
+			if (!bp[ins_pipeline[ins_index].pc].predict()) {
+				flush_pipeline = true;
+				btb[ins_pipeline[ins_index].pc] = pc;
+			}
+			else {
+				pc = temp_pc;
+			}
+			bp[ins_pipeline[ins_index].pc].update_state(true);
+		}
 	}
 	else if (ins_pipeline[ins_index].opcode == 6) {
+		control_flag = false;
 		if (ins_pipeline[ins_index].cond) {
+			long long int temp_pc;
+			if (branch_pred_enabled) {
+				temp_pc = pc;
+			}
 			pc = ins_pipeline[ins_index].alu_output;
-			control_flag = false;
+			if(branch_pred_enabled) {
+				if (!bp[ins_pipeline[ins_index].pc].predict()) {
+					flush_pipeline = true;
+					btb[ins_pipeline[ins_index].pc] = pc;
+				}
+				else {
+					pc = temp_pc;
+				}
+				bp[ins_pipeline[ins_index].pc].update_state(true);
+			}
+		}
+		else {
+			if(branch_pred_enabled) {
+				if (bp[ins_pipeline[ins_index].pc].predict()) {
+					flush_pipeline = true;
+					pc = ins_pipeline[ins_index].pc + 2;
+				}
+				bp[ins_pipeline[ins_index].pc].update_state(false);
+			}
 		}
 	}
 	out << ins_pipeline[ins_index].IR << endl;
@@ -306,7 +382,18 @@ int Simulator::write_back(int ins_index){
 	return 1;
 }
 
-
+void Simulator::flush() {
+	for (int i = 0; i < 4; ++i) {
+		ins_pipeline[ins_index[i]].opcode = 7;
+		ins_pipeline[ins_index[i]].IR = "1111000000000000"; //assuming 16 bit instructions
+	}
+	for (int i = 0; i < NUM_REGISTERS; ++i) {
+		register_status[i] = -1;
+		wait_on_reg[i] = false;
+		raw_flag = false;
+	}
+	flush_pipeline = false;
+}
 
 int Simulator::simulate(){
 	load_i_cache();
@@ -324,14 +411,21 @@ int Simulator::simulate(){
 		}
 		if(unset_raw_flag_cycle) {
 			unset_raw_flag_cycle = false;
-			ins_pipeline[ins_index[0]] = temp_fetch;
+			if (!control_flag) {
+				ins_pipeline[ins_index[0]] = temp_fetch;
+			}
 			ins_pipeline[ins_index[1]] = temp_decode;
+		}
+		if(branch_pred_enabled) {
+			if (flush_pipeline) {
+				flush();
+			}
 		}
 		out << m_clk << endl;
 		out.close();
 		system ("python gui.py");
 		next_clock_cycle();
-		print_reg_file();
+		//print_reg_file();
 		
 	}
 	print_d_cache();
@@ -369,6 +463,7 @@ void Simulator::print_i_cache() {
 }
 
 void Simulator::print_d_cache() {
+	cout << "D Cache\n";
 	cout << d_cache.size() << endl;
 	for(map<int, int>::iterator it = d_cache.begin(); it != d_cache.end(); ++it) {
 		cout << it->first << ": " << it->second <<endl;
