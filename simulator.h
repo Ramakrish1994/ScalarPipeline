@@ -4,6 +4,8 @@
 #include <iostream>
 #include <fstream>
 
+#include "branch_predictor.h"
+
 #ifndef SIMULATOR_H_
 #define SIMULATOR_H_
 
@@ -16,6 +18,7 @@ using namespace std;
 struct pipeline_instr {
 	long long int pc;
 	string IR;
+	string display_IR;
 	int opcode;
 	bool immediate;
 	int op1, op2, op3;
@@ -69,9 +72,15 @@ class Simulator{
 	void print_i_cache();
 	void print_d_cache();
 	void print_reg_file();
+
+	bool branch_pred_enabled;
+	bool flush_pipeline;
+	map<long long int, long long int> btb; 
+	map<long long int, BranchPredictor> bp;
+	void flush();
 	
 public:
-	Simulator(string input_file);
+	Simulator(string input_file, bool b_enable);
 	int fetch(int ins_index);
 	int decode(int ins_index);
 	int register_read(int ins_index);
