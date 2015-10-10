@@ -11,6 +11,7 @@
 
 #define NUM_REGISTERS 16
 #define DEPTH_PIPELINE 6
+#define FORWARDING_ENABLED 0
 
 using namespace std;
 
@@ -25,6 +26,9 @@ struct pipeline_instr {
 	int cond;
 	int alu_output;
 	int load_md;
+	bool wait_for_op1;
+	bool wait_for_op2;
+	bool wait_for_op3;
 	//copy constructor
 };
 
@@ -40,6 +44,7 @@ class Simulator{
 	long long int pc;
 
 	int register_file[NUM_REGISTERS];
+	int forward_file[NUM_REGISTERS];
 
 	struct pipeline_instr ins_pipeline[DEPTH_PIPELINE];
 	
@@ -58,6 +63,8 @@ class Simulator{
 	bool prev_raw_flag;
 	bool unset_raw_flag_cycle;
 	bool wait_on_reg[NUM_REGISTERS];
+	bool operand_forwarding;
+
 	string input_code;
 	ofstream out;
 
