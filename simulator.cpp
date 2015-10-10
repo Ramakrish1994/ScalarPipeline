@@ -42,8 +42,12 @@ Simulator::Simulator(string input_file){
 	for(int i=0;i<6;i++){
 		ins_pipeline[i].opcode = 7;
 		ins_pipeline[i].IR = "1111000000000000"; //assuming 16 bit instructions
-	}
 
+		ins_pipeline[i].wait_for_op1 = false;
+		ins_pipeline[i].wait_for_op2 = false;
+		ins_pipeline[i].wait_for_op3 = false;
+	}
+	
 	temp_decode.opcode = 7;
 	temp_decode.IR = "1111000000000000";
 
@@ -58,11 +62,13 @@ Simulator::Simulator(string input_file){
 	for(int i = 0; i < NUM_REGISTERS; ++i) {
 		register_status.push_back(-1);
 		register_file[i] = 0;
+		forward_file[i] = 0;
 		wait_on_reg[i] = false;
 	}
 
 	register_file[0] = 0;
 
+	operand_forwarding = false;
 	raw_flag = false;
 	unset_raw_flag_cycle = false;
 
@@ -134,6 +140,7 @@ int Simulator::decode(int ins_index){
 		if (register_status[ins_pipeline[ins_index].op1] != -1){
 			is_raw = true;
 			wait_on_reg[ins_pipeline[ins_index].op1] = true;
+			ins_pipeline[ins_index].wait_for_op1 = true;
 		}
 
 	}
@@ -151,6 +158,7 @@ int Simulator::decode(int ins_index){
 		if( (ins_pipeline[ins_index].opcode <= 2 && ins_pipeline[ins_index].immediate) || ins_pipeline[ins_index].opcode == 3 )
 			if (register_status[ins_pipeline[ins_index].op2] != -1){
 				is_raw = true;
+				ins_pipeline[ins_index].wait_for_op2 = true;
 				wait_on_reg[ins_pipeline[ins_index].op2] = true;
 			}
 
@@ -158,10 +166,12 @@ int Simulator::decode(int ins_index){
 			if (register_status[ins_pipeline[ins_index].op2] != -1){
 				wait_on_reg[ins_pipeline[ins_index].op2] = true;
 				is_raw = true;
+				ins_pipeline[ins_index].wait_for_op2 = true;
 			} 
 		if (register_status[ins_pipeline[ins_index].op3] != -1){
 			wait_on_reg[ins_pipeline[ins_index].op3] = true;
 			is_raw = true;
+			ins_pipeline[ins_index].wait_for_op3 = true;
 		}
 
 
@@ -169,10 +179,12 @@ int Simulator::decode(int ins_index){
 			if (register_status[ins_pipeline[ins_index].op1] != -1){
 				wait_on_reg[ins_pipeline[ins_index].op1] = true;
 				is_raw = true;
+				ins_pipeline[ins_index].wait_for_op1 = true;
 			}
 		if (register_status[ins_pipeline[ins_index].op2] != -1){
 			wait_on_reg[ins_pipeline[ins_index].op2] = true;
 			is_raw = true;
+			ins_pipeline[ins_index].wait_for_op2 = true;
 		}
 
 
@@ -198,6 +210,40 @@ int Simulator::decode(int ins_index){
 
 
 int Simulator::register_read(int ins_index) {
+
+	if (FORWARDING_ENABLED){
+		if (ins_pipeline[ins_index].opcode <= 2) {
+			ins_pipeline[ins_index].A = (ins_pipeline[ins_index].wait_for_op2)?forward_file[ins_pipeline[ins_index].op2]:register_file[ins_pipeline[ins_index].op2];
+			ins_pipeline[ins_index].wait_for_op2 = false;
+			if(ins_pipeline[ins_index].immediate) {
+				ins_pipeline[ins_index].imm_field = ins_pipeline[ins_index].op3;
+			}
+			else {
+				ins_pipeline[ins_index].B = (ins_pipeline[ins_index].wait_for_op3)?forward_file[ins_pipeline[ins_index].op3]:register_file[ins_pipeline[ins_index].op3];
+				ins_pipeline[ins_index].wait_for_op3 = false;
+			}
+		}
+		else if (ins_pipeline[ins_index].opcode == 3) {
+			ins_pipeline[ins_index].A = (ins_pipeline[ins_index].wait_for_op2)?forward_file[ins_pipeline[ins_index].op2]:register_file[ins_pipeline[ins_index].op2];
+			ins_pipeline[ins_index].wait_for_op2 = false;
+		}
+		else if (ins_pipeline[ins_index].opcode == 4) {
+			ins_pipeline[ins_index].A = (ins_pipeline[ins_index].wait_for_op1)?forward_file[ins_pipeline[ins_index].op1]:register_file[ins_pipeline[ins_index].op1];
+			ins_pipeline[ins_index].wait_for_op1 = false;
+			ins_pipeline[ins_index].B = (ins_pipeline[ins_index].wait_for_op2)?forward_file[ins_pipeline[ins_index].op2]:register_file[ins_pipeline[ins_index].op2];
+			ins_pipeline[ins_index].wait_for_op2 = false;
+		}
+		else if(ins_pipeline[ins_index].opcode == 5) {
+			ins_pipeline[ins_index].imm_field = ins_pipeline[ins_index].op1;
+		}
+		else if(ins_pipeline[ins_index].opcode == 6) {
+			ins_pipeline[ins_index].A = (ins_pipeline[ins_index].wait_for_op1)?forward_file[ins_pipeline[ins_index].op1]:register_file[ins_pipeline[ins_index].op1];
+			ins_pipeline[ins_index].wait_for_op1 = false;
+			ins_pipeline[ins_index].imm_field = ins_pipeline[ins_index].op2;
+		}
+		out << ins_pipeline[ins_index].IR << endl;
+		return 1;
+	}
 	if (ins_pipeline[ins_index].opcode <= 2) {
 		ins_pipeline[ins_index].A = register_file[ins_pipeline[ins_index].op2];
 		if(ins_pipeline[ins_index].immediate) {
@@ -267,6 +313,39 @@ int Simulator::mem_branch_cycle (int ins_index) {
 		}
 	}
 	out << ins_pipeline[ins_index].IR << endl;
+	if (FORWARDING_ENABLED){
+
+		if (ins_pipeline[ins_index].opcode <=2)
+			forward_file[ins_pipeline[ins_index].op1] = ins_pipeline[ins_index].alu_output;
+		if (ins_pipeline[ins_index].opcode == 3)
+			forward_file[ins_pipeline[ins_index].op1] = ins_pipeline[ins_index].load_md;
+
+		if (ins_pipeline[ins_index].opcode <= 3)
+			if(register_status[ins_pipeline[ins_index].op1] == ins_pipeline[ins_index].pc){
+				register_status[ins_pipeline[ins_index].op1] = -1;
+				operand_forwarding = true;
+			}
+		
+		if (raw_flag){
+			bool raw_not_over = false;
+			for(int i =0; i <NUM_REGISTERS; i++){
+				if(wait_on_reg[i] == true && register_status[i] == -1)
+					wait_on_reg[i] = false;
+				else if (wait_on_reg[i] == true && register_status[i] != -1)
+					raw_not_over = true;
+
+			}
+
+			if(!raw_not_over){
+				raw_flag = false;
+				if(temp_decode.opcode <=3)
+					register_status[temp_decode.op1] = temp_decode.pc;
+				unset_raw_flag_cycle = true;
+
+			}
+		}
+
+	}
 	return 1;
 }
 
@@ -340,7 +419,7 @@ int Simulator::simulate(){
 
 void Simulator::load_i_cache() {
 	ifstream in;
-	in.open(input_code,ios::in);
+	in.open(input_code.c_str(),ios::in);
 	long long int pc_value = 0;
 	string instr;
 	while (getline(in, instr)) {
