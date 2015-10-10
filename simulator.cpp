@@ -162,29 +162,31 @@ int Simulator::decode(int ins_index){
 				wait_on_reg[ins_pipeline[ins_index].op2] = true;
 			}
 
-		if( (ins_pipeline[ins_index].opcode <=2 && !ins_pipeline[ins_index].immediate) )
+		if( (ins_pipeline[ins_index].opcode <=2 && !ins_pipeline[ins_index].immediate) ){
 			if (register_status[ins_pipeline[ins_index].op2] != -1){
 				wait_on_reg[ins_pipeline[ins_index].op2] = true;
 				is_raw = true;
 				ins_pipeline[ins_index].wait_for_op2 = true;
 			} 
-		if (register_status[ins_pipeline[ins_index].op3] != -1){
-			wait_on_reg[ins_pipeline[ins_index].op3] = true;
-			is_raw = true;
-			ins_pipeline[ins_index].wait_for_op3 = true;
+			if (register_status[ins_pipeline[ins_index].op3] != -1){
+				wait_on_reg[ins_pipeline[ins_index].op3] = true;
+				is_raw = true;
+				ins_pipeline[ins_index].wait_for_op3 = true;
+			}
 		}
 
 
-		if(ins_pipeline[ins_index].opcode == 4)
+		if(ins_pipeline[ins_index].opcode == 4){
 			if (register_status[ins_pipeline[ins_index].op1] != -1){
 				wait_on_reg[ins_pipeline[ins_index].op1] = true;
 				is_raw = true;
 				ins_pipeline[ins_index].wait_for_op1 = true;
 			}
-		if (register_status[ins_pipeline[ins_index].op2] != -1){
-			wait_on_reg[ins_pipeline[ins_index].op2] = true;
-			is_raw = true;
-			ins_pipeline[ins_index].wait_for_op2 = true;
+			if (register_status[ins_pipeline[ins_index].op2] != -1){
+				wait_on_reg[ins_pipeline[ins_index].op2] = true;
+				is_raw = true;
+				ins_pipeline[ins_index].wait_for_op2 = true;
+			}
 		}
 
 

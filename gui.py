@@ -3,10 +3,104 @@ from Tkinter import *
 import Tkinter
 top = Tkinter.Tk()
 # Code to add widgets will go here...
+def get_int_from_string( s):
+	num = 0;
+	leng = len(s);
+	pow2 = 1;
+	i = leng - 1
+	while i >= 0:
+		if(s[i] == '1'):
+			num += pow2
+		pow2 *= 2
+		i -= 1
+	
+	return num
+
+
+def get_twos_complement(s):
+	num = 0
+	if (s[0] == '0') 
+		return get_int_from_string(s);
+	
+	else 
+		# if 2'complement of a negative no y is x then ~x + 1 = -y
+		for i in range(len(s)):
+			s[i] = 1 - s[i];
+		
+		num = get_int_from_string(s)
+		num += 1
+		return (-1*num)
+
+
+
 fil = open("ins_pipeline.txt",'r')
 lines = []
 for line in fil:
 	lines.append(line.strip())
+opcode = []
+op1 = []
+op2 = []
+op3 = []
+for line in lines:
+	if line[:3] == "000":
+		op.append("ADD ")
+		op1.append("R"+str(get_int_from_string(s[4:8])))
+		op2.append("R"+str(get_int_from_string(s[8:12])))
+		if line[3] == 1:
+			op3.append("#"+str(get_twos_complement(s[12:16])))
+		else:
+			op3.append("R"+str(get_int_from_string(s[12:16])))
+
+
+	elif line[:3] == "001":
+		op.append("SUB ")
+		op1.append("R"+str(get_int_from_string(s[4:8])))
+		op2.append("R"+str(get_int_from_string(s[8:12])))
+		if line[3] == 1:
+			op3.append("#"+str(get_twos_complement(s[12:16])))
+		else:
+			op3.append("R"+str(get_int_from_string(s[12:16])))
+	elif line[:3] == "010":
+		op.append("MUL ")
+		op1.append("R"+str(get_int_from_string(s[4:8])))
+		op2.append("R"+str(get_int_from_string(s[8:12])))
+		if line[3] == 1:
+			op3.append("#"+str(get_twos_complement(s[12:16])))
+		else:
+			op3.append("R"+str(get_int_from_string(s[12:16])))
+
+	elif line[:3] == "011":
+		op.append("LD ")
+		op1.append("R"+str(get_int_from_string(s[4:8])))
+		op2.append("[R"+str(get_int_from_string(s[8:12]))+"]")
+		op3.append(" ")
+	elif line[:3] == "100":
+		op.append("ST ")
+		op1.append("[R"+str(get_int_from_string(s[4:8]))+"]")
+		op2.append("R"+str(get_int_from_string(s[8:12])))
+		op3.append(" ")
+	elif line[:3] == "101":
+		op.append("JMP ")
+		op1.append(str(get_twos_complement(s[4:12])))
+		op2.append(" ")
+		op3.append(" ")
+	elif line[:3] == "110":
+		op.append("BEQZ ")
+		op1.append("R"+str(get_int_from_string(s[4:8])))
+		op2.append(str(get_twos_complement(s[8:16])))
+		op3.append(" ")
+	elif line[:4] == "1110":
+		op.append("HALT ")
+		op1.append(" "
+		op2.append(" ")
+		op3.append(" ")
+	elif line[:4] == "1111":
+		op.append("NOOP ")
+		op1.append(" ")
+		op2.append(" ")
+		op3.append(" ")
+
+
 
 var = StringVar()
 label = Label( top, textvariable=var, relief=RAISED )
@@ -14,12 +108,12 @@ label = Label( top, textvariable=var, relief=RAISED )
 var.set("Clock Cycle = "+lines[6])
 label.pack()
 
-F = Tkinter.Button(top, text ="Fetch: " + lines[0])
-D = Tkinter.Button(top, text ="Decode: " + lines[1])
-R = Tkinter.Button(top, text ="Register Read: " + lines[2])
-E = Tkinter.Button(top, text ="Execute: " + lines[3])
-M = Tkinter.Button(top, text ="Memory Access: " + lines[4])
-W = Tkinter.Button(top, text ="Write Back: " + lines[5])
+F = Tkinter.Button(top, text ="Fetch: " + opcode[0] + " "+op1[0]+" "+op2[0]+" "+op3[0])
+D = Tkinter.Button(top, text ="Decode: " + opcode[1] + " "+op1[1]+" "+op2[1]+" "+op3[1])
+R = Tkinter.Button(top, text ="Register Read: " + opcode[2] + " "+op1[2]+" "+op2[2]+" "+op3[2])
+E = Tkinter.Button(top, text ="Execute: " + opcode[3] + " "+op1[3]+" "+op2[3]+" "+op3[3])
+M = Tkinter.Button(top, text ="Memory Access: " + opcode[4] + " "+op1[4]+" "+op2[4]+" "+op3[4])
+W = Tkinter.Button(top, text ="Write Back: " + opcode[5] + " "+op1[5]+" "+op2[5]+" "+op3[5])
 
 F.pack()
 D.pack()
