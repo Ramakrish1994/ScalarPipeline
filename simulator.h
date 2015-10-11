@@ -11,7 +11,7 @@
 
 #define NUM_REGISTERS 16
 #define DEPTH_PIPELINE 6
-#define FORWARDING_ENABLED 0
+#define FORWARDING_ENABLED 1
 
 using namespace std;
 

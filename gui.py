@@ -4,9 +4,9 @@ import Tkinter
 top = Tkinter.Tk()
 # Code to add widgets will go here...
 def get_int_from_string( s):
-	num = 0;
-	leng = len(s);
-	pow2 = 1;
+	num = 0
+	leng = len(s)
+	pow2 = 1
 	i = leng - 1
 	while i >= 0:
 		if(s[i] == '1'):
@@ -19,15 +19,20 @@ def get_int_from_string( s):
 
 def get_twos_complement(s):
 	num = 0
-	if (s[0] == '0') 
+	t = ""
+	if (s[0] == '0'): 
 		return get_int_from_string(s);
 	
-	else 
+	else:
 		# if 2'complement of a negative no y is x then ~x + 1 = -y
 		for i in range(len(s)):
-			s[i] = 1 - s[i];
+			if s[i] == '1':
+				t += '0'
+			else:
+				t += '1'
+			
 		
-		num = get_int_from_string(s)
+		num = get_int_from_string(t)
 		num += 1
 		return (-1*num)
 
@@ -37,16 +42,19 @@ fil = open("ins_pipeline.txt",'r')
 lines = []
 for line in fil:
 	lines.append(line.strip())
-opcode = []
+op = []
 op1 = []
 op2 = []
 op3 = []
 for line in lines:
+	s = line
+	
 	if line[:3] == "000":
 		op.append("ADD ")
 		op1.append("R"+str(get_int_from_string(s[4:8])))
 		op2.append("R"+str(get_int_from_string(s[8:12])))
-		if line[3] == 1:
+		
+		if line[3] == '1':
 			op3.append("#"+str(get_twos_complement(s[12:16])))
 		else:
 			op3.append("R"+str(get_int_from_string(s[12:16])))
@@ -56,7 +64,7 @@ for line in lines:
 		op.append("SUB ")
 		op1.append("R"+str(get_int_from_string(s[4:8])))
 		op2.append("R"+str(get_int_from_string(s[8:12])))
-		if line[3] == 1:
+		if line[3] == '1':
 			op3.append("#"+str(get_twos_complement(s[12:16])))
 		else:
 			op3.append("R"+str(get_int_from_string(s[12:16])))
@@ -64,7 +72,7 @@ for line in lines:
 		op.append("MUL ")
 		op1.append("R"+str(get_int_from_string(s[4:8])))
 		op2.append("R"+str(get_int_from_string(s[8:12])))
-		if line[3] == 1:
+		if line[3] == '1':
 			op3.append("#"+str(get_twos_complement(s[12:16])))
 		else:
 			op3.append("R"+str(get_int_from_string(s[12:16])))
@@ -91,7 +99,7 @@ for line in lines:
 		op3.append(" ")
 	elif line[:4] == "1110":
 		op.append("HALT ")
-		op1.append(" "
+		op1.append(" ")
 		op2.append(" ")
 		op3.append(" ")
 	elif line[:4] == "1111":
@@ -108,12 +116,12 @@ label = Label( top, textvariable=var, relief=RAISED )
 var.set("Clock Cycle = "+lines[6])
 label.pack()
 
-F = Tkinter.Button(top, text ="Fetch: " + opcode[0] + " "+op1[0]+" "+op2[0]+" "+op3[0])
-D = Tkinter.Button(top, text ="Decode: " + opcode[1] + " "+op1[1]+" "+op2[1]+" "+op3[1])
-R = Tkinter.Button(top, text ="Register Read: " + opcode[2] + " "+op1[2]+" "+op2[2]+" "+op3[2])
-E = Tkinter.Button(top, text ="Execute: " + opcode[3] + " "+op1[3]+" "+op2[3]+" "+op3[3])
-M = Tkinter.Button(top, text ="Memory Access: " + opcode[4] + " "+op1[4]+" "+op2[4]+" "+op3[4])
-W = Tkinter.Button(top, text ="Write Back: " + opcode[5] + " "+op1[5]+" "+op2[5]+" "+op3[5])
+F = Tkinter.Button(top, text ="Fetch: " + op[0] + " "+op1[0]+" "+op2[0]+" "+op3[0])
+D = Tkinter.Button(top, text ="Decode: " + op[1] + " "+op1[1]+" "+op2[1]+" "+op3[1])
+R = Tkinter.Button(top, text ="Register Read: " + op[2] + " "+op1[2]+" "+op2[2]+" "+op3[2])
+E = Tkinter.Button(top, text ="Execute: " + op[3] + " "+op1[3]+" "+op2[3]+" "+op3[3])
+M = Tkinter.Button(top, text ="Memory Access: " + op[4] + " "+op1[4]+" "+op2[4]+" "+op3[4])
+W = Tkinter.Button(top, text ="Write Back: " + op[5] + " "+op1[5]+" "+op2[5]+" "+op3[5])
 
 F.pack()
 D.pack()
