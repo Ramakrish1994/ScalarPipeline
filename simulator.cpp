@@ -130,6 +130,7 @@ int Simulator::decode(int ins_index){
 	ins_pipeline[ins_index].opcode = get_int_from_string(IR.substr(0,3));
 	ins_pipeline[ins_index].immediate = (get_int_from_string(IR.substr(3,1)) >= 1)?true:false;
 
+	out << ins_pipeline[ins_index].IR << endl;
 	if(ins_pipeline[ins_index].opcode == 7 && ins_pipeline[ins_index].immediate == 0)
 		ins_pipeline[ins_index].opcode = 8;
 
@@ -226,7 +227,6 @@ int Simulator::decode(int ins_index){
 
 	}
 
-	out << ins_pipeline[ins_index].IR << endl;
 	if (is_raw){
 		raw_flag = true;
 		prev_raw_flag = true;
@@ -502,9 +502,10 @@ int Simulator::simulate(){
 		}
 		if(unset_raw_flag_cycle) {
 			unset_raw_flag_cycle = false;
-			if (!control_flag) {
+			if (!control_flag && !prev_raw_flag) {
 				ins_pipeline[ins_index[0]] = temp_fetch;
 			}
+			prev_raw_flag = false;
 			ins_pipeline[ins_index[1]] = temp_decode;
 		}
 		if(branch_pred_enabled) {
@@ -520,8 +521,8 @@ int Simulator::simulate(){
 		
 	}
 	print_d_cache();
-	printf("clk cycles = %lld\n",m_clk);
-	printf("CPI = %f\n",num_ins_executed*1.0/m_clk);
+	printf("clk cycles = %lld\n",m_clk + 1);
+	printf("CPI = %f\n",1.0*(m_clk + 1)/num_ins_executed);
 	printf("Stalls = %lld\n",num_stalls - 5);
 	if (!branch_pred_enabled){
 		printf("Control Stalls = %lld\n",num_control_stalls);
