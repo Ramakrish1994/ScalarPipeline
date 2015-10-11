@@ -11,7 +11,7 @@
 
 #define NUM_REGISTERS 16
 #define DEPTH_PIPELINE 6
-#define FORWARDING_ENABLED 1
+
 
 using namespace std;
 
@@ -74,13 +74,17 @@ class Simulator{
 	void print_reg_file();
 
 	bool branch_pred_enabled;
+	bool operand_forward_enabled;
 	bool flush_pipeline;
 	map<long long int, long long int> btb; 
 	map<long long int, BranchPredictor> bp;
 	void flush();
+	long long int num_ins_executed;
+	long long int num_stalls;
+	long long int num_control_stalls;
 	
 public:
-	Simulator(string input_file, bool b_enable);
+	Simulator(string input_file, bool b_enable, bool of_enable);
 	int fetch(int ins_index);
 	int decode(int ins_index);
 	int register_read(int ins_index);

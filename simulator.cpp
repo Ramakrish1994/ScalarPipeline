@@ -31,7 +31,7 @@ int get_twos_complement(string s) {
 	}
 }
 
-Simulator::Simulator(string input_file, bool b_enable){
+Simulator::Simulator(string input_file, bool b_enable, bool of_enable){
 	ins_index[0] = 5;//for fetch
 	ins_index[1] = 4;
 	ins_index[2] = 3;
@@ -74,7 +74,11 @@ Simulator::Simulator(string input_file, bool b_enable){
 	prev_raw_flag = false;
 	input_code = input_file;
 	branch_pred_enabled = b_enable;
+	operand_forward_enabled = of_enable;
 	flush_pipeline = false;
+	num_ins_executed = 0;
+	num_stalls = 0;
+	num_control_stalls = 0;
 
 
 }
@@ -245,7 +249,7 @@ int Simulator::decode(int ins_index){
 
 int Simulator::register_read(int ins_index) {
 
-	if (FORWARDING_ENABLED){
+	if (operand_forward_enabled){
 		if (ins_pipeline[ins_index].opcode <= 2) {
 			ins_pipeline[ins_index].A = (ins_pipeline[ins_index].wait_for_op2)?forward_file[ins_pipeline[ins_index].op2]:register_file[ins_pipeline[ins_index].op2];
 			ins_pipeline[ins_index].wait_for_op2 = false;
@@ -389,7 +393,7 @@ int Simulator::mem_branch_cycle (int ins_index) {
 		}
 	}
 	out << ins_pipeline[ins_index].IR << endl;
-	if (FORWARDING_ENABLED){
+	if (operand_forward_enabled){
 
 		if (ins_pipeline[ins_index].opcode <=2)
 			forward_file[ins_pipeline[ins_index].op1] = ins_pipeline[ins_index].alu_output;
@@ -457,6 +461,13 @@ int Simulator::write_back(int ins_index){
 		}
 	}
 	out << ins_pipeline[ins_index].IR << endl;
+	if (ins_pipeline[ins_index].opcode != 7)
+		num_ins_executed++;
+	else
+		num_stalls++;
+
+	if (ins_pipeline[ins_index].opcode == 5 || ins_pipeline[ins_index].opcode == 6 )
+		num_control_stalls += 4;
 	if (ins_pipeline[ins_index].opcode == 8)
 		return 0;
 	return 1;
@@ -509,6 +520,13 @@ int Simulator::simulate(){
 		
 	}
 	print_d_cache();
+	printf("clk cycles = %lld\n",m_clk);
+	printf("CPI = %f\n",num_ins_executed*1.0/m_clk);
+	printf("Stalls = %lld\n",num_stalls - 5);
+	if (!branch_pred_enabled){
+		printf("Control Stalls = %lld\n",num_control_stalls);
+		printf("RAW Stalls = %lld\n",num_stalls - 5 - num_control_stalls);
+	}
 	return 1;
 }
 
