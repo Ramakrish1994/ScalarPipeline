@@ -86,7 +86,7 @@ int Simulator::fetch(int ins_index) {
 	}
 	else {
 		if (i_cache.count(pc) == 0) {
-			p.IR = "1110000000000000";
+			p.IR = "1111000000000000";
 		}
 		else {
 			p.IR = i_cache[pc];
@@ -501,7 +501,7 @@ int Simulator::simulate(){
 				flush();
 			}
 		}
-		out << m_clk << endl;
+		out << (m_clk + 1) << endl;
 		out.close();
 		system ("python gui.py");
 		next_clock_cycle();
@@ -518,7 +518,6 @@ void Simulator::load_i_cache() {
 	long long int pc_value = 0;
 	string instr;
 	while (getline(in, instr)) {
-		cout<<instr<<endl;
 		if (instr == "1110000000000000") {
 			i_cache[pc_value] = instr;
 			pc_value += 2;
@@ -536,7 +535,7 @@ void Simulator::load_i_cache() {
 }
 
 void Simulator::print_i_cache() {
-	cout << i_cache.size() << endl;
+	cout << "I Cache Size: " << i_cache.size() << endl;
 	for(map<long long int, string>::iterator it = i_cache.begin(); it != i_cache.end(); ++it) {
 		cout << it->first << ": " << it->second <<endl;
 	}
