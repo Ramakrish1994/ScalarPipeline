@@ -31,7 +31,7 @@ int get_twos_complement(string s) {
 	}
 }
 
-Simulator::Simulator(string input_file, bool b_enable, bool of_enable){
+Simulator::Simulator(string input_file,string data_file, bool b_enable, bool of_enable){
 	ins_index[0] = 5;//for fetch
 	ins_index[1] = 4;
 	ins_index[2] = 3;
@@ -73,12 +73,14 @@ Simulator::Simulator(string input_file, bool b_enable, bool of_enable){
 
 	prev_raw_flag = false;
 	input_code = input_file;
+	d_cache_file = data_file;
 	branch_pred_enabled = b_enable;
 	operand_forward_enabled = of_enable;
 	flush_pipeline = false;
 	num_ins_executed = 0;
 	num_stalls = 0;
 	num_control_stalls = 0;
+
 
 
 }
@@ -488,6 +490,8 @@ void Simulator::flush() {
 
 int Simulator::simulate(){
 	load_i_cache();
+	load_d_cache();
+	print_d_cache();
 	print_i_cache();
 	while(1){
 		out.open("ins_pipeline.txt",ios::out);
@@ -529,6 +533,20 @@ int Simulator::simulate(){
 		printf("RAW Stalls = %lld\n",num_stalls - 5 - num_control_stalls);
 	}
 	return 1;
+}
+
+void Simulator::load_d_cache() {
+	ifstream in;
+	in.open(d_cache_file.c_str(),ios::in);
+	long long int addr= 0;
+	int val;
+	while (!in.eof()) {
+		in>>addr>>val;
+		d_cache[addr] = val;
+
+	}
+
+	in.close();
 }
 
 void Simulator::load_i_cache() {

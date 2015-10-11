@@ -5,7 +5,7 @@ int main(int argc, char* argv[]){
 		cout << "Error: No input file!" << endl;
 		return 0;
 	}
-    Simulator* simulator = new Simulator(argv[1], false, false);
+    Simulator* simulator = new Simulator(argv[1], argv[2], false, false);
 	simulator->simulate();
 	delete simulator;
 	return 1;

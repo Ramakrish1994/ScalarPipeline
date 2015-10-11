@@ -66,8 +66,10 @@ class Simulator{
 	bool operand_forwarding;
 
 	string input_code;
+	string d_cache_file;
 	ofstream out;
 
+	void load_d_cache();
 	void load_i_cache();
 	void print_i_cache();
 	void print_d_cache();
@@ -84,7 +86,7 @@ class Simulator{
 	long long int num_control_stalls;
 	
 public:
-	Simulator(string input_file, bool b_enable, bool of_enable);
+	Simulator(string input_file, string , 	 bool b_enable, bool of_enable);
 	int fetch(int ins_index);
 	int decode(int ins_index);
 	int register_read(int ins_index);
